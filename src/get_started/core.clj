@@ -9,12 +9,13 @@
       (json/read-str :key-fn keyword)))
 
 (defn unique-node-name [node-type node-inputs]
+  ;; hash entire subtree
   (str node-type (hash (list node-type node-inputs))))
 
-(defn node [node-type node-inputs]
+(defn node [node-type node-inputs] 
   (->> (:output ((node-keyword node-type) json-data))
-       (map-indexed (fn [index type] (hash-map type {:output-index index :node-type node-type :node-id (unique-node-name node-type node-inputs) :inputs node-inputs})))
-       (reduce merge)))
+       (map-indexed (fn [index output-type] {output-type {:output-index index :node-type node-type :node-id (unique-node-name node-type node-inputs) :inputs node-inputs}}))
+       (into {})))
 
 (defn output-node [type node-inputs]
   {:node-type type :node-id (unique-node-name type 0) :inputs node-inputs})
@@ -31,13 +32,14 @@
    :inputs (to-comfy-ui-inputs (:inputs node))})
 
 (defn process-node-tree [last-node]
-  (flatten
    [(to-comfy-ui last-node)
-    (map process-node-tree (filter map? (vals (:inputs last-node))))]))
+    (map process-node-tree (filter map? (vals (:inputs last-node))))])
 
-(defn produce-final-workflow [workflow]
+(defn to-json-workflow [workflow]
   (->> (process-node-tree workflow)
+       (flatten)
        (map (fn [entry] {(:id entry) entry}))
+       ;; also gets rid of duplicate subtrees
        (into {})))
 
 (def basic-workflow
@@ -49,4 +51,4 @@
         {image "IMAGE"} (node "VAEDecode" {:samples latent_image :vae vae})]
     (output-node "SaveImage" {:images image})))
 
-(spit "workflow-clojure.json" (json/write-str (produce-final-workflow basic-workflow)))
+(spit "workflow-clojure.json" (json/write-str (to-json-workflow basic-workflow)))
