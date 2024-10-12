@@ -105,7 +105,7 @@
 (defn to-comfy-ui [node]
   {:id (:node-id node)
    :class_type (:node-type node)
-   :_meta {:title (:node-type node)}
+   :_meta {:title (:node-id node)}
    :inputs (to-comfy-ui-inputs (:inputs node))})
 
 (to-comfy-ui basic-workflow)
@@ -117,10 +117,15 @@
     (map process-node-tree (filter map? (vals (:inputs last-node))))]))
 
 
-(def final-workflow (reduce 
- (fn [acc entry]
-   (if (some #(= % entry) acc) 
-     acc (conj acc entry))) [] (process-node-tree basic-workflow)))
+(def final-workflow 
+  (->> (process-node-tree basic-workflow)
+       (reduce
+        (fn [acc entry]
+          (if (some #(= % entry) acc)
+            acc (conj acc entry))) [])
+       (map (fn [entry]{(:id entry) entry}))
+       (into {})))
+
 
 
 (spit "workflow-clojure.json" (json/write-str final-workflow))
