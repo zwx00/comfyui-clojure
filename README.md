@@ -1,0 +1,1 @@
+Managing ComfyUI workflows as JSON files is hard and becomes impossible when a need arises to generate them dynamically or reuse certain components. The solution is to represent them as code so changes can be tracked, understood, reverted, and prototyping can be done directly in the client app.  
